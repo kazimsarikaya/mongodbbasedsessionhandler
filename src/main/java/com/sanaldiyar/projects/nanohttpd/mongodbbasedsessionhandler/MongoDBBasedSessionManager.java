@@ -9,12 +9,8 @@ package com.sanaldiyar.projects.nanohttpd.mongodbbasedsessionhandler;
 
 import com.mongodb.DBObject;
 import com.sanaldiyar.projects.nanohttpd.nanohttpd.NanoSessionManager;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.Date;
+import org.codehaus.jackson.map.ObjectMapper;
 
 /**
  * MongoDB Based Session Manager. Stores session data inside mongodb
@@ -53,11 +49,9 @@ class MongoDBBasedSessionManager implements NanoSessionManager {
     public <T> T get(String key, Class<T> clazz) {
         try {
             byte[] data = (byte[]) session.get(key);
-            ByteArrayInputStream bais = new ByteArrayInputStream(data);
-            ObjectInputStream ois = new ObjectInputStream(bais);
-            Object value = ois.readObject();
-            ois.close();
-            return (T) value;
+            ObjectMapper objectMapper = new ObjectMapper();
+            T value = objectMapper.readValue(data, clazz);
+            return value;
         } catch (Exception ex) {
         }
         return null;
@@ -66,11 +60,9 @@ class MongoDBBasedSessionManager implements NanoSessionManager {
     @Override
     public void set(String key, Object value) {
         try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(baos);
-            oos.writeObject(value);
-            oos.close();
-            session.put(key, baos.toByteArray());
+            ObjectMapper objectMapper = new ObjectMapper();
+            byte[] data = objectMapper.writeValueAsBytes(value);
+            session.put(key, data);
         } catch (Exception ex) {
         }
     }
