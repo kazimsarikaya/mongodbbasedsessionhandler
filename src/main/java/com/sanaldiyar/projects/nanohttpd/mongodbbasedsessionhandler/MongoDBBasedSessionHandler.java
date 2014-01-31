@@ -10,6 +10,7 @@ package com.sanaldiyar.projects.nanohttpd.mongodbbasedsessionhandler;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.sanaldiyar.projects.nanohttpd.nanohttpd.Cookie;
@@ -21,6 +22,7 @@ import java.math.BigInteger;
 import java.net.UnknownHostException;
 import java.security.SecureRandom;
 import java.util.Date;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -35,6 +37,7 @@ public class MongoDBBasedSessionHandler implements NanoSessionHandler {
     private final static String SESSIONCOOKIEID = "__MONGODBBASEDSESSIONHANDLER__";
     private final SecureRandom srng;
     private DB managers;
+    private MongoClient mongoClient;
 
     private final int mdbbasedsh_sesstimeout;
 
@@ -57,7 +60,7 @@ public class MongoDBBasedSessionHandler implements NanoSessionHandler {
         mdbbasedsh_sesstimeout = Integer.parseInt(properties.getProperty("mdbbasedsh.sesstimeout"));
 
         try {
-            MongoClient mongoClient = new MongoClient(mdbbasedsh_host, mdbbasedsh_port);
+            mongoClient = new MongoClient(mdbbasedsh_host, mdbbasedsh_port);
             managers = mongoClient.getDB(mdbbasedsh_database);
             managers.authenticate(mdbbasedsh_user, mdbbasedsh_password.toCharArray());
             DBCollection sessions = managers.getCollection("sessions");
@@ -90,7 +93,12 @@ public class MongoDBBasedSessionHandler implements NanoSessionHandler {
         }
         DBCollection sessions = managers.getCollection("sessions");
         if (sessionid != null) {
-            session = sessions.findOne(new BasicDBObject().append("sessionid", sessionid));
+            DBCursor cursor = sessions.find(new BasicDBObject("sessionid", sessionid));
+            List<DBObject> result = cursor.toArray();
+            cursor.close();
+            if (result.size() == 1) {
+                session = result.get(0);
+            }
             if (session != null) {
                 if (((Date) session.get("expires")).getTime() <= new Date().getTime()) {
                     sessions.remove(new BasicDBObject().append("sessionid", sessionid));
@@ -142,6 +150,13 @@ public class MongoDBBasedSessionHandler implements NanoSessionHandler {
     public void cleanSesssionManagers() {
         DBCollection sessions = managers.getCollection("sessions");
         sessions.remove(new BasicDBObject("expires", new BasicDBObject("$lte", new Date())));
+    }
+
+    /**
+     * closer method
+     */
+    public void close() {
+        mongoClient.close();
     }
 
 }
