@@ -9,6 +9,11 @@ package com.sanaldiyar.projects.nanohttpd.mongodbbasedsessionhandler;
 
 import com.mongodb.DBObject;
 import com.sanaldiyar.projects.nanohttpd.nanohttpd.NanoSessionManager;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Date;
 
 /**
@@ -47,7 +52,12 @@ class MongoDBBasedSessionManager implements NanoSessionManager {
     @Override
     public <T> T get(String key, Class<T> clazz) {
         try {
-            return (T) session.get(key);
+            byte[] data = (byte[]) session.get(key);
+            ByteArrayInputStream bais = new ByteArrayInputStream(data);
+            ObjectInputStream ois = new ObjectInputStream(bais);
+            Object value = ois.readObject();
+            ois.close();
+            return (T) value;
         } catch (Exception ex) {
         }
         return null;
@@ -56,7 +66,11 @@ class MongoDBBasedSessionManager implements NanoSessionManager {
     @Override
     public void set(String key, Object value) {
         try {
-            session.put(key, value);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(value);
+            oos.close();
+            session.put(key, baos.toByteArray());
         } catch (Exception ex) {
         }
     }
