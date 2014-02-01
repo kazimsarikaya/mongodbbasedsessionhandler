@@ -134,7 +134,7 @@ public class MongoDBBasedSessionHandler implements NanoSessionHandler {
         }
         MongoDBBasedSessionManager mdbbsm = (MongoDBBasedSessionManager) nanoSessionManager;
         String sessionid = mdbbsm.getSessionID();
-        Cookie sesscookie = new Cookie(SESSIONCOOKIEID, sessionid, mdbbasedsh_sesstimeout, TimeUnit.MINUTES, response.getRequestURL().getHost(), "/", false, true);
+        Cookie sesscookie = new Cookie(SESSIONCOOKIEID, sessionid, mdbbasedsh_sesstimeout, TimeUnit.SECONDS, response.getRequestURL().getHost(), "/", false, true);
         mdbbsm.setExpires(new Date(new Date().getTime() + sesscookie.getMaxAge() * 1000));
         response.getCookies().add(sesscookie);
         DBCollection sessions = managers.getCollection("sessions");
